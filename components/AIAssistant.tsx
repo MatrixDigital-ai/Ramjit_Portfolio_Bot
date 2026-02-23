@@ -13,8 +13,11 @@ export default function AIAssistant() {
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isRecording, setIsRecording] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognitionRef = useRef<any>(null);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -82,6 +85,41 @@ export default function AIAssistant() {
             e.preventDefault();
             sendMessage();
         }
+    };
+
+    const toggleMic = () => {
+        if (isRecording) {
+            recognitionRef.current?.stop();
+            setIsRecording(false);
+            return;
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const W = window as any;
+        const SpeechRecognitionAPI = W.SpeechRecognition || W.webkitSpeechRecognition;
+
+        if (!SpeechRecognitionAPI) {
+            alert("Speech recognition is not supported in this browser.");
+            return;
+        }
+
+        const recognition = new SpeechRecognitionAPI();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-IN";
+        recognitionRef.current = recognition;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onresult = (event: any) => {
+            const transcript = event.results[0][0].transcript;
+            setInput((prev: string) => (prev ? prev + " " + transcript : transcript));
+        };
+
+        recognition.onerror = () => setIsRecording(false);
+        recognition.onend = () => setIsRecording(false);
+
+        recognition.start();
+        setIsRecording(true);
     };
 
     return (
@@ -183,6 +221,13 @@ export default function AIAssistant() {
                             rows={1}
                             disabled={isLoading}
                         />
+                        <button
+                            className={`ai-mic-btn${isRecording ? " recording" : ""}`}
+                            onClick={toggleMic}
+                            aria-label={isRecording ? "Stop recording" : "Start voice input"}
+                        >
+                            🎤
+                        </button>
                         <button
                             className="ai-send-btn"
                             onClick={sendMessage}

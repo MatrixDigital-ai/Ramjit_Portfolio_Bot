@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 
 interface TrainingConfig {
     core_identity: string;
@@ -26,6 +26,9 @@ export default function AdminPage() {
     const [saving, setSaving] = useState<string | null>(null);
     const [toast, setToast] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
+    const [recordingField, setRecordingField] = useState<string | null>(null);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const recognitionRef = useRef<any>(null);
 
     const showToast = (msg: string) => {
         setToast(msg);
@@ -82,8 +85,63 @@ export default function AdminPage() {
         }
     };
 
+    const toggleMic = (field: keyof TrainingConfig) => {
+        if (recordingField === field) {
+            recognitionRef.current?.stop();
+            setRecordingField(null);
+            return;
+        }
+
+        // Stop any existing recording first
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const W = window as any;
+        const SpeechRecognitionAPI = W.SpeechRecognition || W.webkitSpeechRecognition;
+
+        if (!SpeechRecognitionAPI) {
+            alert("Speech recognition is not supported in this browser.");
+            return;
+        }
+
+        const recognition = new SpeechRecognitionAPI();
+        recognition.continuous = true;
+        recognition.interimResults = false;
+        recognition.lang = "en-IN";
+        recognitionRef.current = recognition;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        recognition.onresult = (event: any) => {
+            let transcript = "";
+            for (let i = event.resultIndex; i < event.results.length; i++) {
+                if (event.results[i].isFinal) {
+                    transcript += event.results[i][0].transcript;
+                }
+            }
+            if (transcript && config) {
+                setConfig((prev) =>
+                    prev
+                        ? {
+                            ...prev,
+                            [field]: prev[field]
+                                ? prev[field] + " " + transcript
+                                : transcript,
+                        }
+                        : prev
+                );
+            }
+        };
+
+        recognition.onerror = () => setRecordingField(null);
+        recognition.onend = () => setRecordingField(null);
+
+        recognition.start();
+        setRecordingField(field);
+    };
+
     useEffect(() => {
-        // Auto-dismiss error after 5 seconds
         if (error) {
             const t = setTimeout(() => setError(null), 5000);
             return () => clearTimeout(t);
@@ -154,13 +212,22 @@ export default function AdminPage() {
                     <div key={key} className="admin-section">
                         <div className="admin-section-header">
                             <h2 className="admin-section-title">{label}</h2>
-                            <button
-                                className="admin-save-btn"
-                                onClick={() => handleSave(key)}
-                                disabled={saving === key}
-                            >
-                                {saving === key ? "Saving..." : "Save"}
-                            </button>
+                            <div className="admin-section-actions">
+                                <button
+                                    className={`admin-mic-btn${recordingField === key ? " recording" : ""}`}
+                                    onClick={() => toggleMic(key)}
+                                    aria-label={recordingField === key ? "Stop recording" : "Start voice input"}
+                                >
+                                    🎤
+                                </button>
+                                <button
+                                    className="admin-save-btn"
+                                    onClick={() => handleSave(key)}
+                                    disabled={saving === key}
+                                >
+                                    {saving === key ? "Saving..." : "Save"}
+                                </button>
+                            </div>
                         </div>
                         <textarea
                             className="admin-textarea"
