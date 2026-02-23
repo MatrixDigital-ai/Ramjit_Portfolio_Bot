@@ -9,6 +9,7 @@ interface Message {
 
 export default function AIAssistant() {
     const [isOpen, setIsOpen] = useState(false);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [messages, setMessages] = useState<Message[]>([]);
     const [input, setInput] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -100,7 +101,7 @@ export default function AIAssistant() {
 
             {/* Chat Panel */}
             {isOpen && (
-                <div className="ai-panel">
+                <div className={`ai-panel${isExpanded ? " ai-panel-expanded" : ""}`}>
                     {/* Header */}
                     <div className="ai-panel-header">
                         <div className="ai-panel-header-left">
@@ -110,13 +111,22 @@ export default function AIAssistant() {
                                 <div className="ai-panel-subtitle">Ramjit Ray AI Engine</div>
                             </div>
                         </div>
-                        <button
-                            className="ai-panel-close"
-                            onClick={() => setIsOpen(false)}
-                            aria-label="Close"
-                        >
-                            ✕
-                        </button>
+                        <div className="ai-panel-actions">
+                            <button
+                                className="ai-panel-expand"
+                                onClick={() => setIsExpanded(!isExpanded)}
+                                aria-label={isExpanded ? "Collapse" : "Expand"}
+                            >
+                                {isExpanded ? "⤡" : "⤢"}
+                            </button>
+                            <button
+                                className="ai-panel-close"
+                                onClick={() => { setIsOpen(false); setIsExpanded(false); }}
+                                aria-label="Close"
+                            >
+                                ✕
+                            </button>
+                        </div>
                     </div>
 
                     {/* Messages */}

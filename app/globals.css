@@ -1702,8 +1702,48 @@ footer {
   cursor: not-allowed
 }
 
+.ai-panel-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px
+}
+
+.ai-panel-expand {
+  background: none;
+  border: none;
+  color: rgba(255, 255, 255, .4);
+  font-size: 18px;
+  cursor: none;
+  padding: 4px;
+  transition: color .2s;
+  line-height: 1
+}
+
+.ai-panel-expand:hover {
+  color: #fff
+}
+
+.ai-panel-expanded {
+  width: 700px;
+  max-height: 80vh;
+  bottom: 28px;
+  border-radius: 20px;
+  transition: all .3s ease
+}
+
+.ai-panel-expanded .ai-messages {
+  min-height: 400px;
+  max-height: 60vh
+}
+
+.ai-panel-expanded .ai-input {
+  max-height: 120px
+}
+
 @media(max-width:500px) {
-  .ai-panel {
+
+  .ai-panel,
+  .ai-panel-expanded {
     right: 0;
     left: 0;
     bottom: 0;
